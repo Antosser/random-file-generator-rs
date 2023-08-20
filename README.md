@@ -13,13 +13,16 @@ This implementation is very fast and has no memory leaks, so you can create file
 ```
 Program to create large file consisting of random data
 
-Usage: rfgen.exe [OPTIONS] <SIZE>
+Usage: rfgen [OPTIONS] <SIZE>
 
 Arguments:
   <SIZE>  The size of each file. Suffixes: KB, KiB, MB, MiB, GB, GiB, TB, TiB
 
 Options:
   -a, --amount <AMOUNT>  The amount of files of the specified size [default: 1]
+  -o, --offset <OFFSET>  Offset of the filename index [default: 0]
+  -p, --prefix <PREFIX>  File prefix [default: ]
+  -s, --suffix <SUFFIX>  File suffix [default: ]
   -h, --help             Print help
   -V, --version          Print version
 ```
