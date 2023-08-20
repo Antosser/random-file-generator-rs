@@ -18,6 +18,18 @@ struct Cli {
     /// The amount of files of the specified size
     #[arg(short, long, default_value_t = 1)]
     amount: usize,
+
+    /// Offset of the filename index
+    #[arg(short, long, default_value_t = 0)]
+    offset: usize,
+
+    /// File prefix
+    #[arg(short, long, default_value = "")]
+    prefix: String,
+
+    /// File suffix
+    #[arg(short, long, default_value = "")]
+    suffix: String,
 }
 
 fn main() -> Result<(), String> {
@@ -60,8 +72,8 @@ fn main() -> Result<(), String> {
     };
 
     let mut rng = rand::thread_rng();
-    for i in 0..args.amount {
-        let file = fs::File::create(format!("{:04}", i))
+    for i in (0..args.amount).map(|n| n + args.offset) {
+        let file = fs::File::create(format!("{}{:04}{}", args.prefix, i, args.suffix))
             .map_err(|e| format!("Couldn't create file: {}", e))?;
 
         let mut writer = BufWriter::new(file);
