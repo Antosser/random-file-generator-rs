@@ -5,6 +5,7 @@ use std::{
 };
 
 use clap::Parser;
+use log::{debug, error, info};
 use rand::Rng;
 use regex::Regex;
 
@@ -33,6 +34,8 @@ struct Cli {
 }
 
 fn main() -> Result<(), String> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
     let suffixes: Vec<(String, usize)> = vec![
         ("KB".to_string(), 1000),
         ("KiB".to_string(), 1024),
@@ -47,9 +50,11 @@ fn main() -> Result<(), String> {
     let args = Cli::parse();
     let size = 'size: {
         if let Ok(x) = args.size.parse::<usize>() {
+            debug!("Successfully parse raw size");
             x
         } else {
             for suffix in &suffixes {
+                debug!("Checking for {} suffix", suffix.0);
                 if let Some(cap) = Regex::new(
                     r"([0-9]+)"
                         .chars()
@@ -61,31 +66,41 @@ fn main() -> Result<(), String> {
                 .captures(&args.size)
                 {
                     if let Ok(num) = cap[1].parse::<usize>() {
+                        debug!("Successfully parsed number");
                         break 'size num * suffix.1;
                     }
                 }
             }
 
-            println!("Couldn't parse the file size: {}", args.size);
+            error!("Couldn't parse the file size: {}", args.size);
             exit(1);
         }
     };
 
     let mut rng = rand::thread_rng();
     for i in (0..args.amount).map(|n| n + args.offset) {
-        let file = fs::File::create(format!("{}{:04}{}", args.prefix, i, args.suffix))
-            .map_err(|e| format!("Couldn't create file: {}", e))?;
+        let filename = format!("{}{:04}{}", args.prefix, i, args.suffix);
+        info!("Creating file {} ...", filename);
+        let file =
+            fs::File::create(&filename).map_err(|e| format!("Couldn't create file: {}", e))?;
 
         let mut writer = BufWriter::new(file);
 
         let mut bytes_left = size;
 
+        let mut debug_counter = 100_000_000;
         while bytes_left >= 32 {
             writer
                 .write_all(&rng.gen::<[u8; 32]>())
                 .map_err(|e| format!("Couldn't write to file: {}", e))?;
 
             bytes_left -= 32;
+            debug_counter -= 32;
+
+            if debug_counter <= 0 {
+                info!("{} bytes left", bytes_left);
+                debug_counter = 100_000_000;
+            }
         }
 
         writer
@@ -95,6 +110,8 @@ fn main() -> Result<(), String> {
                     .collect::<Vec<u8>>(),
             )
             .map_err(|e| format!("Couldn't write to file: {}", e))?;
+
+        info!("Finished writing file: {filename}")
     }
 
     Ok(())
